@@ -38,6 +38,15 @@ counter = 0
 
 # Create instance of Tracker class
 tracker = Tracker()
+
+# Dictionary of people entering
+people_entering = {}
+entered_people = set()
+
+# Dict and set of people exiting
+people_exiting = {}
+exited_people = set()
+
 while True:
     # reads a frame, ret is false when there's no more
     # frames left
@@ -71,29 +80,43 @@ while True:
         y2 = int(row[3])
         obj_class = int(row[5])
         obj_class_name = classes_list[obj_class]
+
         if obj_class_name == "person":
             peoples_list.append([x1, y1, x2, y2])
-            tracked_people = tracker.update(peoples_list)
-            for tracked_person in tracked_people:
-                x3, y3, x4, y4, person_id = tracked_person
-                # if the object detected is a person
-                test_result = cv2.pointPolygonTest(
-                    np.array(area2, np.int32), (x2, y2), False
+            
+    tracked_people = tracker.update(peoples_list)
+
+    for tracked_person in tracked_people:
+        x3, y3, x4, y4, person_id = tracked_person
+        # if the object detected is a person
+
+        a2_test_result = cv2.pointPolygonTest(
+            np.array(area2, np.int32), (x4, y4), False
+        )
+
+        if a2_test_result >= 1:
+            # test if detected object is inside area 2
+            people_entering[person_id] = (x4, y4)
+
+        if person_id in people_entering:
+            a1_test_result = cv2.pointPolygonTest(
+                np.array(area1, np.int32), (x4, y4), False
+            )
+            if a1_test_result >= 1:
+                # Then check if object is inside area 1 which would mean the person is entering the building
+                cv2.rectangle(frame, (x3, y3), (x4, y4), (0, 255, 0), 2)
+                cv2.putText(
+                    frame,
+                    f"{obj_class_name} {person_id}",
+                    (x3, y3),
+                    cv2.FONT_HERSHEY_DUPLEX,
+                    (0.5),
+                    (255, 255, 255),
+                    1,
                 )
-                if test_result >= 1:
-                    # test if detected object is inside area 2
-                    cv2.rectangle(frame, (x3, y3), (x4, y4), (0, 255, 0), 2)
-                    cv2.putText(
-                        frame,
-                        f"{obj_class_name} {person_id}",
-                        (x3, y3),
-                        cv2.FONT_HERSHEY_DUPLEX,
-                        (0.5),
-                        (255, 255, 255),
-                        1,
-                    )
-                    # draw a circle in the bottom right corner of the detected object (person)
-                    cv2.circle(frame, (x4, y4), 3, (255, 0, 255), -1)
+                # draw a circle in the bottom right corner of the detected object (person)
+                cv2.circle(frame, (x4, y4), 3, (255, 0, 255), -1)
+                entered_people.add(person_id)
 
     # Draw the areas of interest
     cv2.polylines(frame, [np.array(area1, np.int32)], True, (255, 0, 0), 2)
@@ -105,6 +128,8 @@ while True:
     cv2.putText(
         frame, str("2"), (466, 485), cv2.FONT_HERSHEY_COMPLEX, (0.5), (0, 0, 0), 1
     )
+
+    print(len(entered_people))
 
     cv2.imshow("Video", frame)
     if cv2.waitKey(1) & 0xFF == 27:
