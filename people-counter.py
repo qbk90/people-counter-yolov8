@@ -74,24 +74,26 @@ while True:
         if obj_class_name == "person":
             peoples_list.append([x1, y1, x2, y2])
             tracked_people = tracker.update(peoples_list)
-            # if the object detected is a person
-            test_result = cv2.pointPolygonTest(
-                np.array(area2, np.int32), (x2, y2), False
-            )
-            if test_result >= 1:
-                # test if detected object is inside area 2
-                cv2.rectangle(frame, (x1, y1), (x2, y2), (0, 255, 0), 2)
-                cv2.putText(
-                    frame,
-                    str(obj_class_name),
-                    (x1, y1),
-                    cv2.FONT_HERSHEY_DUPLEX,
-                    (0.5),
-                    (255, 255, 255),
-                    1,
+            for tracked_person in tracked_people:
+                x3, y3, x4, y4, person_id = tracked_person
+                # if the object detected is a person
+                test_result = cv2.pointPolygonTest(
+                    np.array(area2, np.int32), (x2, y2), False
                 )
-                # draw a circle in the bottom right corner of the detected object (person)
-                cv2.circle(frame, (x2, y2), 3, (255, 0, 255), -1)
+                if test_result >= 1:
+                    # test if detected object is inside area 2
+                    cv2.rectangle(frame, (x3, y3), (x4, y4), (0, 255, 0), 2)
+                    cv2.putText(
+                        frame,
+                        f"{obj_class_name} {person_id}",
+                        (x3, y3),
+                        cv2.FONT_HERSHEY_DUPLEX,
+                        (0.5),
+                        (255, 255, 255),
+                        1,
+                    )
+                    # draw a circle in the bottom right corner of the detected object (person)
+                    cv2.circle(frame, (x4, y4), 3, (255, 0, 255), -1)
 
     # Draw the areas of interest
     cv2.polylines(frame, [np.array(area1, np.int32)], True, (255, 0, 0), 2)
