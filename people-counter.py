@@ -2,6 +2,7 @@ import cv2
 import pandas as pd
 import numpy as np
 from ultralytics import YOLO
+from tracker import *
 
 # Predicto model instance creation
 model = YOLO("yolov8s.pt")  # yolov8s (small) model
@@ -35,6 +36,8 @@ classes_list = classes_file.read().split("\n")
 # Counter for frame skipping
 counter = 0
 
+# Create instance of Tracker class
+tracker = Tracker()
 while True:
     # reads a frame, ret is false when there's no more
     # frames left
@@ -50,37 +53,59 @@ while True:
 
     # Store the predicted objects data into a
     # Pandas dataframe
-    results=model.predict(frame)
-    a=results[0].boxes.data
-    px=pd.DataFrame(a.cpu().numpy()).astype("float")
+    results = model.predict(frame, verbose=False)
+    a = results[0].boxes.data
+    px = pd.DataFrame(a.cpu().numpy()).astype("float")
 
-    peoples_list=[]
+    peoples_list = []
 
-    for index,row in px.iterrows():
+    for index, row in px.iterrows():
         # If the detected object is a person,
         # draw a rectangle around them
 
         # print(row)
- 
-        x1=int(row[0])
-        y1=int(row[1])
-        x2=int(row[2])
-        y2=int(row[3])
-        obj_class=int(row[5])
-        c=classes_list[obj_class]
-        if c == "person":
-           cv2.rectangle(frame,(x1,y1),(x2,y2),(0,255,0),2)
-           cv2.putText(frame,str(c),(x1,y1),cv2.FONT_HERSHEY_DUPLEX,(0.5),(255,255,255),1)
+
+        x1 = int(row[0])
+        y1 = int(row[1])
+        x2 = int(row[2])
+        y2 = int(row[3])
+        obj_class = int(row[5])
+        obj_class_name = classes_list[obj_class]
+        if obj_class_name == "person":
+            peoples_list.append([x1, y1, x2, y2])
+            tracked_people = tracker.update(peoples_list)
+            # if the object detected is a person
+            test_result = cv2.pointPolygonTest(
+                np.array(area2, np.int32), (x2, y2), False
+            )
+            if test_result >= 1:
+                # test if detected object is inside area 2
+                cv2.rectangle(frame, (x1, y1), (x2, y2), (0, 255, 0), 2)
+                cv2.putText(
+                    frame,
+                    str(obj_class_name),
+                    (x1, y1),
+                    cv2.FONT_HERSHEY_DUPLEX,
+                    (0.5),
+                    (255, 255, 255),
+                    1,
+                )
+                # draw a circle in the bottom right corner of the detected object (person)
+                cv2.circle(frame, (x2, y2), 3, (255, 0, 255), -1)
 
     # Draw the areas of interest
-    cv2.polylines(frame,[np.array(area1,np.int32)],True,(255,0,0),2)
-    cv2.putText(frame,str('1'),(504,471),cv2.FONT_HERSHEY_COMPLEX,(0.5),(0,0,0),1)
+    cv2.polylines(frame, [np.array(area1, np.int32)], True, (255, 0, 0), 2)
+    cv2.putText(
+        frame, str("1"), (504, 471), cv2.FONT_HERSHEY_COMPLEX, (0.5), (0, 0, 0), 1
+    )
 
-    cv2.polylines(frame,[np.array(area2,np.int32)],True,(255,0,0),2)
-    cv2.putText(frame,str('2'),(466,485),cv2.FONT_HERSHEY_COMPLEX,(0.5),(0,0,0),1)
+    cv2.polylines(frame, [np.array(area2, np.int32)], True, (255, 0, 0), 2)
+    cv2.putText(
+        frame, str("2"), (466, 485), cv2.FONT_HERSHEY_COMPLEX, (0.5), (0, 0, 0), 1
+    )
 
     cv2.imshow("Video", frame)
-    if cv2.waitKey(1)&0xFF==27:
+    if cv2.waitKey(1) & 0xFF == 27:
         break
 
 cap.release()
