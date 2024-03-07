@@ -14,7 +14,7 @@ area1=[(312,388),(289,390),(474,469),(497,462)]
 
 area2=[(279,392),(250,397),(423,477),(454,469)]
 
-# Function to get the coordinated of the mouse cursor when
+# Function to get the coordinates of the mouse cursor when
 # the cursor is inside the RGB window
 def RGB(event, x, y, flags, param):
     if event == cv2.EVENT_MOUSEMOVE :  
