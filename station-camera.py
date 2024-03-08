@@ -10,8 +10,8 @@ model = YOLO("yolov8s.pt")  # yolov8s (small) model
 model.to("cuda")  # Run model on GPU
 
 # Areas of interest coordinates
-area1 = [(312, 388), (289, 390), (474, 469), (497, 462)]
-area2 = [(279, 392), (250, 397), (423, 477), (454, 469)]
+area1 = [(373, 181), (666, 176), (668, 186), (370, 193)]
+area2 = [(364, 215), (368, 206), (673, 201), (678, 209)]
 
 
 # Function to get the coordinates of the mouse cursor when
@@ -25,7 +25,7 @@ def mouse_click(event, x, y, flags, param):
 cv2.namedWindow("Video")
 cv2.setMouseCallback("Video", mouse_click)
 
-cap = cv2.VideoCapture("peoplecount1.mp4")
+cap = cv2.VideoCapture("station-camera-feed.mp4")
 
 # Classes of interest list creation
 classes_file = open("classes.txt", "r")
@@ -166,7 +166,7 @@ while True:
     print(f"Entraron: {len(entered_people)} - Salieron: {len(exited_people)}")
 
     cv2.imshow("Video", frame)
-    if cv2.waitKey(1) & 0xFF == 27:
+    if cv2.waitKey(30) & 0xFF == 27:
         break
 
 cap.release()
