@@ -91,6 +91,7 @@ while True:
         # for every person the tracker is tracking
         x3, y3, x4, y4, person_id = tracked_person
 
+        ###### ACA
         a2_test_result = cv2.pointPolygonTest(
             np.array(area2, np.int32), (x4, y4), False
         ) # check if person crosses area 2
@@ -121,6 +122,36 @@ while True:
                 cv2.circle(frame, (x4, y4), 3, (255, 0, 255), -1)
                 entered_people.add(person_id)
 
+        a1_test_result = cv2.pointPolygonTest(
+            np.array(area1, np.int32), (x4, y4), False
+        ) # check if person crosses area 2
+
+        if a1_test_result >= 1:
+            # test is 1 when the person is inside area 2
+            # then save the id and coordinates of the person inside area 2
+            people_exiting[person_id] = (x4, y4)
+
+        if person_id in people_exiting:
+            # test if person who crossed area 2 is also crossing area 1
+            a2_test_result = cv2.pointPolygonTest(
+                np.array(area2, np.int32), (x4, y4), False
+            )
+            if a2_test_result >= 1:
+                # Then check if object is inside area 1 which would mean the person is entering the building
+                cv2.rectangle(frame, (x3, y3), (x4, y4), (0, 255, 0), 2)
+                cv2.putText(
+                    frame,
+                    f"{obj_class_name} {person_id}",
+                    (x3, y3),
+                    cv2.FONT_HERSHEY_DUPLEX,
+                    (0.5),
+                    (255, 255, 255),
+                    1,
+                )
+                # draw a circle in the bottom right corner of the detected object (person)
+                cv2.circle(frame, (x4, y4), 3, (255, 0, 255), -1)
+                exited_people.add(person_id)
+
     # Draw the areas of interest
     cv2.polylines(frame, [np.array(area1, np.int32)], True, (255, 0, 0), 2)
     cv2.putText(
@@ -132,7 +163,7 @@ while True:
         frame, str("2"), (466, 485), cv2.FONT_HERSHEY_COMPLEX, (0.5), (0, 0, 0), 1
     )
 
-    print(len(entered_people))
+    print(f"Entraron: {len(entered_people)} - Salieron: {len(exited_people)}")
 
     cv2.imshow("Video", frame)
     if cv2.waitKey(1) & 0xFF == 27:
