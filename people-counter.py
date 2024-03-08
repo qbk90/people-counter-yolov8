@@ -70,9 +70,8 @@ while True:
 
     for index, row in px.iterrows():
         # If the detected object is a person,
-        # draw a rectangle around them
+        # append the object to the peoples_list
 
-        # print(row)
 
         x1 = int(row[0])
         y1 = int(row[1])
@@ -82,23 +81,27 @@ while True:
         obj_class_name = classes_list[obj_class]
 
         if obj_class_name == "person":
+            cv2.rectangle(frame, (x1, y1),(x2, y2), (0,255,0),1)
             peoples_list.append([x1, y1, x2, y2])
             
+    # Send the list of tracked people to the tracker
     tracked_people = tracker.update(peoples_list)
 
     for tracked_person in tracked_people:
+        # for every person the tracker is tracking
         x3, y3, x4, y4, person_id = tracked_person
-        # if the object detected is a person
 
         a2_test_result = cv2.pointPolygonTest(
             np.array(area2, np.int32), (x4, y4), False
-        )
+        ) # check if person crosses area 2
 
         if a2_test_result >= 1:
-            # test if detected object is inside area 2
+            # test is 1 when the person is inside area 2
+            # then save the id and coordinates of the person inside area 2
             people_entering[person_id] = (x4, y4)
 
         if person_id in people_entering:
+            # test if person who crossed area 2 is also crossing area 1
             a1_test_result = cv2.pointPolygonTest(
                 np.array(area1, np.int32), (x4, y4), False
             )
