@@ -10,8 +10,11 @@ model = YOLO("yolov8s.pt")  # yolov8s (small) model
 model.to("cuda")  # Run model on GPU
 
 # Areas of interest coordinates
-area1 = [(312, 388), (289, 390), (474, 469), (497, 462)]
-area2 = [(279, 392), (250, 397), (423, 477), (454, 469)]
+# area1 = [(373, 181), (666, 176), (668, 186), (370, 193)]
+# area2 = [(364, 215), (368, 206), (673, 201), (678, 209)]
+
+area1 = [(311, 325), (454, 287), (462, 294), (319, 338)]
+area2 = [(319, 338), (322, 357), (476, 301),(465, 294)]
 
 
 # Function to get the coordinates of the mouse cursor when
@@ -25,7 +28,9 @@ def mouse_click(event, x, y, flags, param):
 cv2.namedWindow("Video")
 cv2.setMouseCallback("Video", mouse_click)
 
-cap = cv2.VideoCapture("peoplecount1.mp4")
+
+cap = cv2.VideoCapture(1)  # webcam externo
+# cap = cv2.imread("web-feed.png")
 
 # Classes of interest list creation
 classes_file = open("classes.txt", "r")
@@ -57,7 +62,7 @@ while True:
     if counter % 2 != 0:
         # Skips every other frame
         continue
-    frame = cv2.resize(frame, (1020, 500))
+    # frame = cv2.resize(frame, (1020, 500))
     # frame=cv2.flip(frame,1)
 
     # Store the predicted objects data into a
@@ -72,7 +77,6 @@ while True:
         # If the detected object is a person,
         # append the object to the peoples_list
 
-
         x1 = int(row[0])
         y1 = int(row[1])
         x2 = int(row[2])
@@ -81,9 +85,9 @@ while True:
         obj_class_name = classes_list[obj_class]
 
         if obj_class_name == "person":
-            cv2.rectangle(frame, (x1, y1),(x2, y2), (0,255,0),1)
+            cv2.rectangle(frame, (x1, y1), (x2, y2), (0, 255, 0), 1)
             peoples_list.append([x1, y1, x2, y2])
-            
+
     # Send the list of tracked people to the tracker
     tracked_people = tracker.update(peoples_list)
 
@@ -94,7 +98,7 @@ while True:
         ###### ACA
         a2_test_result = cv2.pointPolygonTest(
             np.array(area2, np.int32), (x4, y4), False
-        ) # check if person crosses area 2
+        )  # check if person crosses area 2
 
         if a2_test_result >= 1:
             # test is 1 when the person is inside area 2
@@ -124,7 +128,7 @@ while True:
 
         a1_test_result = cv2.pointPolygonTest(
             np.array(area1, np.int32), (x4, y4), False
-        ) # check if person crosses area 2
+        )  # check if person crosses area 2
 
         if a1_test_result >= 1:
             # test is 1 when the person is inside area 2
@@ -154,19 +158,19 @@ while True:
 
     # Draw the areas of interest
     cv2.polylines(frame, [np.array(area1, np.int32)], True, (255, 0, 0), 1)
-    cv2.putText(
-        frame, str("1"), (504, 471), cv2.FONT_HERSHEY_COMPLEX, (0.5), (0, 0, 0), 1
-    )
+    # cv2.putText(
+    #     frame, str("1"), (504, 471), cv2.FONT_HERSHEY_COMPLEX, (0.5), (0, 0, 0), 1
+    # )
 
     cv2.polylines(frame, [np.array(area2, np.int32)], True, (255, 0, 0), 1)
-    cv2.putText(
-        frame, str("2"), (466, 485), cv2.FONT_HERSHEY_COMPLEX, (0.5), (0, 0, 0), 1
-    )
+    # cv2.putText(
+    #     frame, str("2"), (466, 485), cv2.FONT_HERSHEY_COMPLEX, (0.5), (0, 0, 0), 1
+    # )
 
     print(f"Entraron: {len(entered_people)} - Salieron: {len(exited_people)}")
 
     cv2.imshow("Video", frame)
-    if cv2.waitKey(10) & 0xFF == 27:
+    if cv2.waitKey(30) & 0xFF == 27:
         break
 
 cap.release()

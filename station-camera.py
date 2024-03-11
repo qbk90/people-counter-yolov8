@@ -25,7 +25,8 @@ def mouse_click(event, x, y, flags, param):
 cv2.namedWindow("Video")
 cv2.setMouseCallback("Video", mouse_click)
 
-cap = cv2.VideoCapture("station-camera-feed.mp4")
+# cap = cv2.VideoCapture("station-camera-feed.mp4")
+cap = cv2.VideoCapture(1) #webcam externo
 
 # Classes of interest list creation
 classes_file = open("classes.txt", "r")
