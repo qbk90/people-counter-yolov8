@@ -3,6 +3,10 @@ import pandas as pd
 import numpy as np
 from ultralytics import YOLO
 from tracker import *
+from vidgear.gears import CamGear
+import csv
+from datetime import datetime
+import time
 
 # Predicto model instance creation
 model = YOLO("yolov8s.pt")  # yolov8s (small) model
@@ -10,14 +14,12 @@ model = YOLO("yolov8s.pt")  # yolov8s (small) model
 model.to("cuda")  # Run model on GPU
 
 # Areas of interest coordinates
-# area1 = [(373, 181), (666, 176), (668, 186), (370, 193)]
-# area2 = [(364, 215), (368, 206), (673, 201), (678, 209)]
+area1 = [(650, 285), (1230, 515), (1220, 534), (618, 292)]
+area2 = [(596, 296), (1210, 542), (1210, 565), (574, 312)]
 
-# area1 = [(311, 325), (454, 287), (462, 294), (319, 338)]
-# area2 = [(319, 338), (322, 357), (476, 301),(465, 294)]
-
-area1 = [(286, 312), (592, 298), (611, 308), (279, 316)]
-area2 = [(279, 322), (612, 313), (623, 324), (276, 336)]
+stream = CamGear(
+    source="https://www.youtube.com/watch?v=4N5EZG4XCZo", stream_mode=True, logging=True
+).start()
 
 
 # Function to get the coordinates of the mouse cursor when
@@ -31,9 +33,8 @@ def mouse_click(event, x, y, flags, param):
 cv2.namedWindow("Video")
 cv2.setMouseCallback("Video", mouse_click)
 
-
-cap = cv2.VideoCapture(1)  # webcam externo
-# cap = cv2.imread("web-feed.png")
+cap = cv2.VideoCapture("station-camera-feed.mp4")
+# cap = cv2.VideoCapture(1) #webcam externo
 
 # Classes of interest list creation
 classes_file = open("classes.txt", "r")
@@ -55,18 +56,44 @@ entered_people = set()
 people_exiting = {}
 exited_people = set()
 
+
+def record_entry_exit(people_in, people_out):
+    current_time = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+    people_inside = people_in - people_out
+    with open("entry_exit_log.csv", "a+", newline="") as csvfile:
+        fieldnames = ["Time", "People In", "People Out", "People Inside"]
+        writer = csv.DictWriter(csvfile, fieldnames=fieldnames)
+
+        # Check if the file is empty
+        csvfile.seek(0)
+        first_char = csvfile.read(1)
+        if not first_char:
+            writer.writeheader()
+
+        writer.writerow(
+            {
+                "Time": current_time,
+                "People In": people_in,
+                "People Out": people_out,
+                "People Inside": people_inside,
+            }
+        )
+
+
+start_time = time.time()
+interval = 1  # run every X seconds
+
 while True:
     # reads a frame, ret is false when there's no more
     # frames left
-    ret, frame = cap.read()
-    if not ret:
+    frame = stream.read()
+    if frame is None:
         break
     counter += 1
     if counter % 2 != 0:
         # Skips every other frame
         continue
-    # frame = cv2.resize(frame, (1020, 500))
-    # frame=cv2.flip(frame,1)
+    frame = cv2.resize(frame, (1280, 720))
 
     # Store the predicted objects data into a
     # Pandas dataframe
@@ -118,7 +145,7 @@ while True:
                 cv2.rectangle(frame, (x3, y3), (x4, y4), (0, 255, 0), 2)
                 cv2.putText(
                     frame,
-                    f"{obj_class_name} {person_id}",
+                    f"{person_id}",
                     (x3, y3),
                     cv2.FONT_HERSHEY_DUPLEX,
                     (0.5),
@@ -161,19 +188,19 @@ while True:
 
     # Draw the areas of interest
     cv2.polylines(frame, [np.array(area1, np.int32)], True, (255, 0, 0), 1)
-    # cv2.putText(
-    #     frame, str("1"), (504, 471), cv2.FONT_HERSHEY_COMPLEX, (0.5), (0, 0, 0), 1
-    # )
 
     cv2.polylines(frame, [np.array(area2, np.int32)], True, (255, 0, 0), 1)
-    # cv2.putText(
-    #     frame, str("2"), (466, 485), cv2.FONT_HERSHEY_COMPLEX, (0.5), (0, 0, 0), 1
-    # )
 
-    print(f"Entraron: {len(entered_people)} - Salieron: {len(exited_people)}")
+    elapsed_time = time.time() - start_time
+
+    if elapsed_time >= interval:
+        record_entry_exit(len(exited_people), len(entered_people))
+        start_time = time.time()
+        # entered_people.clear()
+        # exited_people.clear()
 
     cv2.imshow("Video", frame)
-    if cv2.waitKey(30) & 0xFF == 27:
+    if cv2.waitKey(34) & 0xFF == 27:
         break
 
 cap.release()
