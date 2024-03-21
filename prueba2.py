@@ -7,6 +7,7 @@ from vidgear.gears import CamGear
 import csv
 from datetime import datetime
 import time
+import matplotlib.pyplot as plt
 
 # Predicto model instance creation
 model = YOLO("yolov8s.pt")  # yolov8s (small) model
@@ -61,7 +62,7 @@ def record_entry_exit(people_in, people_out):
     current_time = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
     people_inside = people_in - people_out
     with open("entry_exit_log.csv", "a+", newline="") as csvfile:
-        fieldnames = ["Time", "People In", "People Out", "People Inside"]
+        fieldnames = ["time", "people_in", "people_out", "people_inside"]
         writer = csv.DictWriter(csvfile, fieldnames=fieldnames)
 
         # Check if the file is empty
@@ -72,16 +73,43 @@ def record_entry_exit(people_in, people_out):
 
         writer.writerow(
             {
-                "Time": current_time,
-                "People In": people_in,
-                "People Out": people_out,
-                "People Inside": people_inside,
+                "time": current_time,
+                "people_in": people_in,
+                "people_out": people_out,
+                "people_inside": people_inside,
             }
         )
 
 
-start_time = time.time()
-interval = 1  # run every X seconds
+def plot_graph(csv_filename):
+    # Read CSV file into a DataFrame
+    df = pd.read_csv(csv_filename)
+
+    # Convert 'Time' column to datetime
+    df["Time"] = pd.to_datetime(df["Time"])
+
+    # Plot the graph
+    plt.plot(
+        df["Time"],
+        df["People Inside"],
+    )
+    plt.title("Number of People Inside Over Time")
+    plt.xlabel("Time")
+    plt.ylabel("People Inside")
+    plt.xticks(rotation=45)
+    plt.grid(True)
+    plt.tight_layout()
+    plt.show()
+
+
+csv_filename = "entry_exit_log.csv"
+
+
+log_start_time = time.time()
+log_interval = 5  # run every X seconds
+
+graph_start_time = time.time()
+graph_interval = 5
 
 while True:
     # reads a frame, ret is false when there's no more
@@ -175,7 +203,7 @@ while True:
                 cv2.rectangle(frame, (x3, y3), (x4, y4), (0, 255, 0), 2)
                 cv2.putText(
                     frame,
-                    f"{obj_class_name} {person_id}",
+                    f"{person_id}",
                     (x3, y3),
                     cv2.FONT_HERSHEY_DUPLEX,
                     (0.5),
@@ -191,11 +219,11 @@ while True:
 
     cv2.polylines(frame, [np.array(area2, np.int32)], True, (255, 0, 0), 1)
 
-    elapsed_time = time.time() - start_time
+    log_elapsed_time = time.time() - log_start_time
 
-    if elapsed_time >= interval:
+    if log_elapsed_time >= log_interval:
         record_entry_exit(len(exited_people), len(entered_people))
-        start_time = time.time()
+        log_start_time = time.time()
         # entered_people.clear()
         # exited_people.clear()
 
